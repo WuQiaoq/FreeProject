@@ -10,11 +10,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class LoginForm {
-    private JPanel LoginPanel;
+    public JPanel LoginPanel;
     private JTextField usernameField;
     private JPasswordField passwordField;
     private JButton loginButton;
-    private JButton exitButton;
+    private JButton registerButton;
 
     public LoginForm() {
         LoginPanel = new JPanel(new GridLayout(3, 2, 10, 10)); //分成网格
@@ -29,11 +29,13 @@ public class LoginForm {
         LoginPanel.add(passwordField);
 
         loginButton = new JButton("Login");
-        exitButton = new JButton("Exit");
+        registerButton = new JButton("Registrar");
+
         LoginPanel.add(loginButton);
-        LoginPanel.add(exitButton);
+        LoginPanel.add(registerButton);
 
         loginButton.addActionListener(new ActionListener() {
+            @Override
             public void actionPerformed(ActionEvent e) {
                 String username = usernameField.getText();
                 String password = String.valueOf(passwordField.getPassword());
@@ -49,9 +51,32 @@ public class LoginForm {
             }
         });
 
-        exitButton.addActionListener(e -> System.exit(0));
+        registerButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String username = usernameField.getText();
+                String password = String.valueOf(passwordField.getPassword());
+
+                if (username.isEmpty() || password.isEmpty()) {
+                    JOptionPane.showMessageDialog(LoginPanel, "Nombre de usuario y contraseñas no pueden estar vacios",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                if (createNewUser(username, password)) {
+                    JOptionPane.showMessageDialog(LoginPanel, "Usuario ya registrado con exito", "Error", JOptionPane.ERROR_MESSAGE);
+                    passwordField.setText("");
+                }else {
+                    JOptionPane.showMessageDialog(LoginPanel, "Usuario ya registrado con exito", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
     }
 
+    /**
+     * Verificar de inicio de sesión
+     * @param username
+     * @param password
+     * @return
+     */
     private boolean authenicate(String username, String password) {
         String sql = "SELECT * FROM usuarios WHERE nom = ? AND password = ?";
 
@@ -70,22 +95,31 @@ public class LoginForm {
         }
     }
 
-    //登录成功就跳到主界面
+    // crear un nuevo usuario
+    private boolean createNewUser(String username, String password) {
+        String sql = "INSERT INTO usuarios (nom, password) VALUES (?, ?)";
+
+        try(Connection connection = DBConnection.getConnection();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, username);
+            statement.setString(2, password);
+            statement.executeUpdate();
+            return true;
+
+        }catch (SQLException e) {
+            JOptionPane.showMessageDialog(LoginPanel, "Error en base de datos: " + e.getMessage()
+                    , "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+    }
+
+    /**
+     * Después de iniciar sesión correctamente, será redirigido a la interfaz principal.
+     */
     private void openMainFrame() {
-        Principal principal = new Principal();
+        GamePanel principal = new GamePanel();
         principal.createAndShowGUI();
     }
 
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("LoginForm");
-        frame.setContentPane(new LoginForm().LoginPanel);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.setResizable(false);//不允许设置最大化
-        frame.setLocationRelativeTo(null);//居中
-        frame.setSize(400, 200);
-        frame.setVisible(true);
-    }
+
 }
-
-
